@@ -1,0 +1,4 @@
+bind-addr: 0.0.0.0:8082
+auth: none
+password: 23ebce559c74094827ad98fb
+cert: false

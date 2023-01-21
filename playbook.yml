@@ -1,0 +1,83 @@
+
+---
+- hosts: main
+  tasks:
+  
+  - name: Upgrade all apt packages
+    apt:
+      upgrade: dist
+      force_apt_get: yes
+
+  - name: Install docker & python
+    apt:
+      name:
+        - docker
+        - docker-compose
+        - python3
+        - python3-pip
+        - build-essential
+        - pkg-config
+        - nodejs
+        - npm
+        - curl
+      state: latest
+      update_cache: true
+
+  - name: Docker start
+    service:
+      name: docker
+      state: started
+      enabled: yes
+
+  - name: Clone repo react
+    git:
+      repo: https://github.com/Filicipa/react-app.git
+      dest: /home/vagrant/react-app/
+
+  - name: Build an image
+    docker_image:
+      build:
+        path: /home/vagrant/hillel-hw-15
+      name: filicipa/js-application
+      tag: v1
+      source: build
+      state: present
+
+  - name: Start a container
+    docker_container:
+      name: js-application
+      image: filicipa/js-application:v1
+      state: started
+      ports: 8002:8002
+
+  - name: Clone repo python
+    git:
+      repo: https://github.com/Filicipa/hillel-lesson-18.git
+      dest: /home/vagrant/python_hw/
+
+  - name: Install code-server
+    shell: "{{ item }}"
+    with_items:
+      - npm config set python python3
+      - curl -fsSL https://code-server.dev/install.sh | sh
+
+  - name: Copy config code-server
+    copy:
+      src: config.yaml
+      dest: /home/vagrant/.config/code-server/
+
+  - name: Open project in code-server
+    shell: "{{ item }}"
+    with_items:
+      - "systemctl stop code-server@root.service"
+      - "systemctl restart code-server@vagrant"
+
+  - name: Check connect (GET) to a page and it returns a status 200
+    uri:
+      url: http://localhost:8002
+      return_content: yes
+    register: result
+
+  - name: debug
+    debug:
+      msg: The localhost:8002 returned "{{ result.status }}"
